@@ -135,6 +135,9 @@ response = llm.invoke([prompt])
 response.pretty_print()
 ```
 
+**execute the above main.pycode :**
+uv run main.py
+
 **Line-by-line, simple explanation:**
 1. `load_dotenv()` — loads your `.env` file so `GEMINI_API_KEY` becomes available to the code.
 2. `ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")` — creates the LLM object, pointing at a specific Gemini model.
