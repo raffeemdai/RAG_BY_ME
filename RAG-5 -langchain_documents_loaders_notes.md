@@ -174,6 +174,25 @@ of `Document`s."
 
 ---
 
+## 5a. Quick Comparison — Document Loader vs TextLoader vs PyPDFLoader vs CSVLoader vs DirectoryLoader
+
+| Aspect | Document Loader (general concept) | TextLoader | PyPDFLoader | CSVLoader | DirectoryLoader |
+|---|---|---|---|---|---|
+| What it is | Umbrella category — any class that reads a source and returns Document objects | Loader for plain .txt files | Loader for .pdf files | Loader for .csv files | Wrapper that applies another loader to many files in a folder |
+| Package | langchain_community.document_loaders (base classes) | langchain_community.document_loaders | langchain_community.document_loaders | langchain_community.document_loaders | langchain_community.document_loaders |
+| Input source | Files, URLs, databases, APIs, etc. (varies by loader) | A single .txt file path | A single .pdf file path | A single .csv file path | A folder path (with a glob pattern) |
+| Granularity (Documents produced) | Depends on the specific loader | Usually 1 Document for the whole file | 1 Document per page | 1 Document per row | Combines results from every matched file into one list |
+| Typical metadata added | Varies | source (file path) | source (file path), page (page number) | source (file path), row (row number) | Whatever the inner loader_cls adds, per file |
+| Extra dependency needed? | Sometimes | No, works out of the box | Yes, needs a PDF parsing library | No, works out of the box | Depends on the loader_cls you plug in |
+| Key parameter(s) | - | file_path, autodetect_encoding | file_path | file_path | path, glob (e.g. *.txt, **/*.pdf), loader_cls |
+| Example use case | Reading from any single source type | Loading one plain-text note | Loading a PDF report page by page | Loading tabular data row by row | Bulk-loading an entire folder of documents (with subfolders) |
+| Return type of .load() | list[Document] | list[Document] (length 1) | list[Document] (length = number of pages) | list[Document] (length = number of rows) | list[Document] (combined across all matched files) |
+
+**Simple way to remember it:** `DirectoryLoader` isn't really a *type* of file reader like the other three — it's a **multiplier**. It takes any single-file loader (TextLoader, PyPDFLoader, CSVLoader, etc.) and runs it across every matching file in a folder, merging all the resulting Documents into one list.
+
+
+---
+
 ## 7. Why we split documents into chunks
 
 A single `Document` (e.g. one PDF page, or a whole `.txt` file) is often **too
