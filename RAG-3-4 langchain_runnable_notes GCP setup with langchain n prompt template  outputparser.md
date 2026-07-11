@@ -146,7 +146,124 @@ Every link in the pipe (`prompt`, `llm`, `output_parser`) **must** be a `Runnabl
 > Non-Runnable = the **data** flowing through the pipeline (messages, strings, responses)
 
 ---
+# Prompt vs Prompt Template — Runnable Point of View (LCEL / RAG)
 
+## What is a Runnable?
+
+In LangChain Expression Language (LCEL), a **Runnable** is any component that
+implements a common interface (`.invoke()`, `.batch()`, `.stream()`,
+`.ainvoke()`, etc.). This uniform interface is what lets you **chain
+components together with the `|` (pipe) operator** — the output of one
+becomes the input of the next, just like Unix pipes.
+
+```
+component1 | component2 | component3
+```
+
+This only works if **all three are Runnables**.
+
+---
+
+## Prompt vs Prompt Template
+
+| | Plain string / f-string | `PromptTemplate` / `ChatPromptTemplate` |
+|---|---|---|
+| What it is | Just Python text you build yourself, e.g. `f"Answer: {question}"` | A LangChain object that holds a template with placeholders |
+| Is it a Runnable? | **No** — it's a plain `str`, has no `.invoke()`, can't be piped | **Yes** — inherits from `Runnable`, has `.invoke()`, `.batch()`, `.stream()` |
+| Can you use it in an LCEL chain (`\|`)? | No — you'd have to call `.format()` manually *before* the chain starts | Yes — it slots directly into a chain |
+| What `.invoke()` does | N/A | Takes a dict of variables and returns a `PromptValue` (or list of messages) |
+
+### Code example
+
+```python
+from langchain_core.prompts import PromptTemplate
+
+# PromptTemplate IS a Runnable
+prompt = PromptTemplate.from_template(
+    "Answer the question using only the context.\n\nContext: {context}\n\nQuestion: {question}"
+)
+
+# because it's Runnable, .invoke() works directly:
+result = prompt.invoke({
+    "context": "Paris is the capital of France.",
+    "question": "What is the capital of France?"
+})
+print(result)   # a PromptValue / formatted prompt
+
+# a plain string has none of this — you'd have to do:
+raw_prompt = f"Context: {'Paris is the capital of France.'}\nQuestion: {'What is the capital of France?'}"
+# raw_prompt.invoke(...)  -> AttributeError, strings aren't Runnable
+```
+
+**Why this matters for RAG:** because `PromptTemplate` is Runnable, you can
+chain it directly with a retriever, an LLM, and an output parser using `|`,
+without writing manual glue code (`.format()`, then passing to the model,
+then parsing). A plain string breaks that chain — you'd have to step outside
+LCEL to build it.
+
+---
+
+## Which RAG / LCEL Components Are Runnable?
+
+| Component | Runnable? | Notes |
+|---|---|---|
+| `PromptTemplate` / `ChatPromptTemplate` | Yes | `.invoke(dict)` returns a formatted prompt |
+| `ChatModel` / `LLM` (e.g. `ChatOpenAI`, `ChatGoogleGenerativeAI`) | Yes | `.invoke(prompt)` returns an `AIMessage` |
+| `OutputParser` (e.g. `StrOutputParser`) | Yes | `.invoke(AIMessage)` returns a parsed value (e.g. plain string) |
+| Retriever (`vectorstore.as_retriever()`) | Yes | `.invoke(query_string)` returns `list[Document]` |
+| `VectorStore` itself (e.g. `Chroma`) | No | Has `.similarity_search()` etc., but is not Runnable directly. Call `.as_retriever()` to get a Runnable wrapper |
+| `Document` object | No | It's just a data container (`page_content` + `metadata`), not a processing step |
+| `TextSplitter` (e.g. `RecursiveCharacterTextSplitter`) | No | Has `.split_documents()`, but isn't part of the invoke/pipe interface. It's a pre-processing utility used before building the chain |
+| `DocumentLoader` (e.g. `TextLoader`) | No | Has `.load()`, used once up front to build your data. Not part of the runtime chain |
+| Plain Python function | Yes, if wrapped | Wrap with `RunnableLambda(fn)` to make any function pipeable |
+| A dict of Runnables `{"context": retriever, "question": RunnablePassthrough()}` | Yes | LCEL auto-converts a dict into a `RunnableParallel`. Each value runs and its output fills that key |
+| `RunnablePassthrough()` | Yes | Passes input through unchanged. Used to forward the original question alongside retrieved context |
+
+**Rule of thumb:** anything involved in the **request/response flow at query
+time** (prompt → retriever → LLM → parser) is Runnable. Anything involved in
+**one-time data preparation** (loading files, splitting text, building the
+vector store) is **not** Runnable — you run those once, upfront, outside the
+chain.
+
+---
+
+## Putting It Together — A Typical RAG Chain
+
+```python
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+retriever = vectorstore.as_retriever()          # Runnable
+
+prompt = ChatPromptTemplate.from_template(       # Runnable
+    "Answer using only this context:\n{context}\n\nQuestion: {question}"
+)
+
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")  # Runnable
+
+output_parser = StrOutputParser()                # Runnable
+
+# Everything here is Runnable, so | works end to end:
+rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}  # RunnableParallel
+    | prompt
+    | llm
+    | output_parser
+)
+
+answer = rag_chain.invoke("What is a refund policy?")
+print(answer)
+```
+
+Because **every step** here is Runnable, `rag_chain` itself becomes a single
+Runnable — you can `.invoke()`, `.stream()`, or `.batch()` the **whole
+pipeline** as one unit. That's the entire point of LCEL: composability
+through a shared interface.
+
+
+---
 ## Embedding vs Indexing (RAG)
 
 Two separate steps in the RAG pipeline, often confused because they happen back-to-back.
