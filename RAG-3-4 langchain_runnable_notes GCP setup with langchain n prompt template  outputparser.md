@@ -1,6 +1,8 @@
 # LangChain Notes: `Runnable`
 kHAJA sir NOtes
+
 30th june 2026 class : https://directai.blog/2026/06/30/gen-ai-developer-classroom-notes-30-jun-2026/
+
 2nd July/2026 – https://directai.blog/2026/07/02/gen-ai-developer-classroom-notes-02-jul-2026/
 ## What is `Runnable`?
 
