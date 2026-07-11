@@ -15,8 +15,11 @@ a RAG pipeline is actually built: **Document → Loader → Splitter → Embeddi
 
 Think of a `Document` as a simple **container with two things**:
 
-1. `page_content` — the actual text.
-2. `metadata` — a dictionary of extra info *about* that text (source URL, author, page number, date, etc.)
+1. `page_content` — the actual text. The actual textual data parsed from a PDF, document, or web page. This string is what gets converted into embeddings.
+2. `metadata` — a dictionary of extra info *about* that text (source URL, author, page number, date, etc.) .A dictionary containing contextual information such as the source file name, page number, author, or timestamp. This is heavily used to filter documents before a similarity search is performed.
+
+   
+
 
 That's it. It's just a labeled box of text. Everything else in LangChain's RAG
 workflow (loaders, splitters, retrievers) works by producing or consuming `Document` objects.
