@@ -172,6 +172,22 @@ documents[-1].metadata     # metadata of the last Document loaded
 this pattern, run this loader, and combine all the results into one big list
 of `Document`s."
 
+# `glob` in a RAG Directory Loader
+
+## Brief Introduction
+
+`glob` is a **file pattern matching mechanism** used by a Directory Loader to specify **which files should be loaded** from a directory. Instead of listing every file manually, you define a pattern, and the loader automatically finds all matching files.
+
+## Examples
+
+- `*.pdf` → Load all PDF files.
+- `*.txt` → Load all text files.
+- `**/*.pdf` → Load all PDF files from the directory **and all its subdirectories** (recursive search).
+- `*.*` → Load all files regardless of their extension.
+
+## Key Takeaway
+
+`glob` helps a RAG application **select the right set of documents automatically**, making it easy to load large collections of files without manually specifying each filename.
 ---
 
 ## 5a. Quick Comparison — Document Loader vs TextLoader vs PyPDFLoader vs CSVLoader vs DirectoryLoader
