@@ -2,6 +2,10 @@
 
 Study notes based on the notebook `documents_document_loaders.ipynb` from the
 [GenAIDevelopment/agenticai](https://github.com/GenAIDevelopment/agenticai) repo
+
+https://directai.blog/2026/07/04/gen-ai-developer-classroom-notes-04-jul-2026/
+
+
 (`june26/rag/rag_learning_gcp/`). Simplified explanations + the code, in the order
 a RAG pipeline is actually built: **Document → Loader → Splitter → Embedding → Vector Store**.
 
