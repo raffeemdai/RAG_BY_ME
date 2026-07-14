@@ -6,6 +6,7 @@ https://directai.blog/2026/07/07/gen-ai-developer-classroom-notes-07-jul-2026/
 https://www.pinecone.io/learn/vector-database/
 
 
+
 ---
 
 ## 1. What is an Embedding? (in one line)
